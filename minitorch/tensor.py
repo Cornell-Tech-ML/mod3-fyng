@@ -295,15 +295,12 @@ class Tensor:
     @property
     def size(self) -> int:
         """Returns the size of the tensor"""
-        size = 1
-        for i in self.shape:
-            size *= i
-        return size
+        return self._tensor.size
 
     @property
     def dims(self) -> int:
         """Returns the dimensions of the tensor."""
-        return len(self.shape)
+        return self._tensor.dims
 
     def zero_grad_(self) -> None:
         """Set self.grad to None."""
@@ -313,7 +310,7 @@ class Tensor:
         return Add.apply(self, self._ensure_tensor(b))
 
     def __sub__(self, b: TensorLike) -> Tensor:
-        return Add.apply(self, Neg.apply(self._ensure_tensor(b)))
+        return Add.apply(self, -self._ensure_tensor(b))
 
     def __mul__(self, b: TensorLike) -> Tensor:
         return Mul.apply(self, self._ensure_tensor(b))
@@ -331,14 +328,21 @@ class Tensor:
         return Neg.apply(self)
 
     def __radd__(self, b: TensorLike) -> Tensor:
-        return Add.apply(self._ensure_tensor(b), self)
+        return self + b
 
     def __rmul__(self, b: TensorLike) -> Tensor:
-        return Mul.apply(self._ensure_tensor(b), self)
+        return self * b
+    
+    def all(self, dim: Optional[int] = None) -> Tensor:
+        """Check if all elements are true."""
+        if dim is None:
+            return All.apply(self.view(self.size), self._ensure_tensor(0))
+        else:
+            return All.apply(self, self._ensure_tensor(dim))
 
-    def is_close(self, b: TensorLike) -> Tensor:
+    def is_close(self, y: Tensor) -> Tensor:
         """Check if two tensors are close."""
-        return IsClose.apply(self, self._ensure_tensor(b))
+        return IsClose.apply(self, y)
 
     def sigmoid(self) -> Tensor:
         """Apply the sigmoid function elementwise."""
@@ -356,33 +360,24 @@ class Tensor:
         """Apply the exponential function elementwise."""
         return Exp.apply(self)
 
-    def all(self, dim: Optional[int] = None) -> Tensor:
-        """Check if all elements are true."""
-        if dim is None:
-            return All.apply(self)
-        else:
-            return All.apply(self, Tensor.make([dim], (1,), backend=self.backend))
-
-    def view(self, *dim: int) -> Tensor:
-        """Reshape the tensor into the given shape."""
-        dim_tensor = Tensor.make(list(dim), (len(dim),), backend=self.backend)
-        return View.apply(self, dim_tensor)
-
     def sum(self, dim: Optional[int] = None) -> Tensor:
         """Sum the tensor, optionally over the given dimension."""
         if dim is None:
-            return Sum.apply(self)
+            return Sum.apply(self.contiguous().view(self.size), self._ensure_tensor(0))
         else:
-            return Sum.apply(self, Tensor.make([dim], (1,), backend=self.backend))
-
+            return Sum.apply(self, self._ensure_tensor(dim))
+    
     def mean(self, dim: Optional[int] = None) -> Tensor:
         """Take the mean of the tensor, optionally over the given dimension."""
         if dim is None:
             return self.sum() / self.size
         else:
             return self.sum(dim) / self.shape[dim]
-
-    def permute(self, *dim: int) -> Tensor:
+        
+    def permute(self, *order: int) -> Tensor:
         """Permute the dimensions of the tensor."""
-        dim_tensor = Tensor.make(list(dim), (len(dim),), backend=self.backend)
-        return Permute.apply(self, dim_tensor)
+        return Permute.apply(self, tensor(list(order)))
+    
+    def view(self, *shape: int) -> Tensor:
+        """Reshape the tensor into the given shape."""
+        return View.apply(self, tensor(list(shape)))

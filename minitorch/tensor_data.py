@@ -67,10 +67,11 @@ def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
 
     """
     # TODO: Implement for Task 2.1.
-    for i in range(len(shape)):
-        out_index[i] = ordinal % shape[i]
-        ordinal = ordinal // shape[i]
-
+    cur_ord = ordinal + 0
+    for i in range(len(shape)-1, -1, -1):
+        sh = shape[i]
+        out_index[i] = int(cur_ord % sh)
+        cur_ord = cur_ord // sh
 
 def broadcast_index(
     big_index: Index, big_shape: Shape, shape: Shape, out_index: OutIndex
@@ -94,18 +95,12 @@ def broadcast_index(
 
     """
     # TODO: Implement for Task 2.2.
-    union_shape = shape_broadcast(big_shape.tolist(), shape.tolist())
-    i = 1
-    # starting from right aligned
-    while i <= len(shape):
-        if union_shape[-i] == shape[-i]:
-            # if the shape is the same, then the index is the same
-            out_index[-i] = big_index[-i]
+    for i, s in enumerate(shape):
+        if s > 1:
+            out_index[i] = big_index[i + len(big_shape) - len(shape)]
         else:
-            # if shape is different, then broadcasted 1 from shape
-            out_index[-i] = 0
-        i += 1
-
+            out_index[i] = 0
+    return None
 
 def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
     """Broadcast two shapes to create a new union shape.
@@ -125,28 +120,22 @@ def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
 
     """
     # TODO: Implement for Task 2.2.
-    out_shape = []
-    i = len(shape1) - 1
-    j = len(shape2) - 1
-    while i >= 0 and j >= 0:
-        if shape1[i] == shape2[j]:
-            out_shape.append(shape1[i])
-        elif shape1[i] == 1:
-            out_shape.append(shape2[j])
-        elif shape2[j] == 1:
-            out_shape.append(shape1[i])
+    m = max(len(shape1), len(shape2))
+    c_rev = [0] * m
+    shape1_rev = list(reversed(shape1))
+    shape2_rev = list(reversed(shape2))
+    for i in range(m):
+        if i >= len(shape1):
+            c_rev[i] = shape2_rev[i]
+        elif i >= len(shape2):
+            c_rev[i] = shape1_rev[i]
         else:
-            raise IndexingError(f"Cannot broadcast {shape1} and {shape2}")
-        i -= 1
-        j -= 1
-    while i >= 0:
-        out_shape.append(shape1[i])
-        i -= 1
-    while j >= 0:
-        out_shape.append(shape2[j])
-        j -= 1
-    return tuple(reversed(out_shape))
-
+            c_rev[i] = max(shape1_rev[i], shape2_rev[i])
+            if shape1_rev[i] != c_rev[i] and shape1_rev[i] != 1:
+                raise IndexingError(f"Cannot broadcast {shape1} and {shape2}.")
+            if shape2_rev[i] != c_rev[i] and shape2_rev[i] != 1:
+                raise IndexingError(f"Cannot broadcast {shape1} and {shape2}.")
+    return tuple(reversed(c_rev))
 
 def strides_from_shape(shape: UserShape) -> UserStrides:
     """Return a contiguous stride for a shape"""
@@ -303,14 +292,13 @@ class TensorData:
         assert list(sorted(order)) == list(
             range(len(self.shape))
         ), f"Must give a position to each dimension. Shape: {self.shape} Order: {order}"
-
         # TODO: Implement for Task 2.1.
-        new_shape = [0] * len(order)
-        new_strides = [0] * len(order)
-        for i in range(len(order)):
-            new_shape[i] = self.shape[order[i]]
-            new_strides[i] = self.strides[order[i]]
-        return TensorData(self._storage, tuple(new_shape), tuple(new_strides))
+
+        return TensorData(
+            self._storage, 
+            tuple(self.shape[o] for o in order), 
+            tuple(self._strides[o] for o in order)
+        )
 
     def to_string(self) -> str:
         """Convert to string"""

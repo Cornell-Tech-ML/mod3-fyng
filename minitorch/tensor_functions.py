@@ -131,8 +131,9 @@ class Mul(Function):
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
         """$f'_x(x, y) * d = y * d, f'_y(x, y) * d = x * d$"""
         t1, t2 = ctx.saved_values
-        return grad_output.f.mul_zip(grad_output, t2), grad_output.f.mul_zip(
-            grad_output, t1
+        return (
+            grad_output.f.mul_zip(t2, grad_output), 
+            grad_output.f.mul_zip(t1, grad_output)
         )
 
 
@@ -150,9 +151,7 @@ class Sigmoid(Function):
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
         """$f'(x) * d$ = $f(x) * (1 - f(x)) * d$"""
         (sigma_a,) = ctx.saved_values
-        return grad_output.f.mul_zip(
-            grad_output, sigma_a - sigma_a.f.mul_zip(sigma_a, sigma_a)
-        )
+        return sigma_a * (-sigma_a + 1.0) * grad_output
 
 
 class ReLU(Function):
@@ -201,33 +200,25 @@ class Exp(Function):
     def backward(ctx: Context, grad_output: Tensor) -> Tensor:
         """$f'(x) * d = e^x * d$"""
         (exp_a,) = ctx.saved_values
-        return grad_output.f.mul_zip(grad_output, exp_a)
+        return grad_output.f.mul_zip(exp_a, grad_output)
 
 
 class Sum(Function):
     r"""Sum function $f(x) = \sum x$"""
 
     @staticmethod
-    def forward(ctx: Context, a: Tensor, dim: Optional[Tensor] = None) -> Tensor:
+    def forward(ctx: Context, a: Tensor, dim: Tensor) -> Tensor:
         r"""Compute $f(x) = \sum x$"""
-        if dim is not None:
-            ctx.save_for_backward(int(dim.item()))
-            return a.f.add_reduce(a, int(dim.item()))
-        else:
-            ctx.save_for_backward(None)
-            return a.f.add_reduce(a.contiguous().view(int(operators.prod(a.shape))), 0)
-
+        ctx.save_for_backward(a.shape, int(dim.item()))
+        return a.f.add_reduce(a, int(dim.item()))
+        
     @staticmethod
     def backward(
-        ctx: Context, grad_output: Tensor
-    ) -> Union[Tensor, Tuple[Tensor, float]]:
+        ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
         """$f'(x) * d = d$"""
-        (dim,) = ctx.saved_values
-        if dim is not None:
-            return grad_output, 0.0
-        else:
-            return grad_output
-
+        a_shape, dim = ctx.saved_values
+        return grad_output, 0.0
+    
 
 class LT(Function):
     """Less than function $f(x, y) = x < y$"""
@@ -235,12 +226,14 @@ class LT(Function):
     @staticmethod
     def forward(ctx: Context, t1: Tensor, t2: Tensor) -> Tensor:
         """Compute $f(x, y) = x < y$"""
+        ctx.save_for_backward(t1.shape, t2.shape)
         return t1.f.lt_zip(t1, t2)
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
         """Compute $f'(x) * d$ and $f'(y) * d$"""
-        return grad_output.zeros(), grad_output.zeros()
+        (shape1, shape2) = ctx.saved_values
+        return grad_output.zeros(shape1), grad_output.zeros(shape2)
 
 
 class EQ(Function):
@@ -249,12 +242,14 @@ class EQ(Function):
     @staticmethod
     def forward(ctx: Context, t1: Tensor, t2: Tensor) -> Tensor:
         """Compute $f(x, y) = x == y$"""
+        ctx.save_for_backward(t1.shape, t2.shape)
         return t1.f.eq_zip(t1, t2)
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
         """Compute $f'(x) * d$ and $f'(y) * d$"""
-        return grad_output.zeros(), grad_output.zeros()
+        (shape1, shape2) = ctx.saved_values
+        return grad_output.zeros(shape1), grad_output.zeros(shape2)
 
 
 class IsClose(Function):
@@ -275,34 +270,19 @@ class Permute(Function):
     """Permute function $f(x, order) = x.permute(order)$"""
 
     @staticmethod
-    def forward(ctx: Context, a: Tensor, order: Optional[Tensor] = None) -> Tensor:
+    def forward(ctx: Context, a: Tensor, order: Tensor) -> Tensor:
         """Compute $f(x, order) = x.permute(order)$"""
-        if order is None:
-            ctx.save_for_backward(None)
-            return a
-        else:
-            int_order = order.to_numpy().astype(int)
-            ctx.save_for_backward(int_order)
-            a._tensor = a._tensor.permute(*int_order)
-            return a
+        ctx.save_for_backward(order)
+        return a._new(a._tensor.permute(*[int(order[i]) for i in range(order.size)]))
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
         """Compute $f'(x) * d$"""
         (order,) = ctx.saved_values
-        if order is None:
-            return grad_output, 0.0
-        else:
-            inv_order = np.zeros(len(order), dtype=int)
-            for i, o in enumerate(order):
-                inv_order[o] = i
-
-            print(order, inv_order)
-
-            grad_output._tensor = grad_output._tensor.permute(*inv_order)
-            return grad_output, 0.0
-
-
+        order2: List[int] = [
+            a[0] for a in sorted(enumerate([order[i] for i in range(order.size)]), key=lambda a: a[1])
+        ]   
+        return grad_output._new(grad_output._tensor.permute(*order2)), 0.0
 # End of Task 2.3
 
 

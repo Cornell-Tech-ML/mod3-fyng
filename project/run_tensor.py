@@ -14,7 +14,6 @@ def RParam(*shape):
     return minitorch.Parameter(r)
 
 # TODO: Implement for Task 2.5.
-
 class Network(minitorch.Module):
     def __init__(
         self, hidden_layers: int) -> None:
@@ -38,12 +37,11 @@ class Linear(minitorch.Module):
         self.bias = RParam(1, out_size)
 
     def forward(self, inputs: minitorch.Tensor) -> minitorch.Tensor:
-        batch_size, _ = inputs.shape
-        x = inputs.view(batch_size, self.in_size, 1)
-        x = x * self.weights.value
-        x = x.sum(dim=1).view(batch_size, self.out_size)
-        x = x + self.bias.value
-        return x
+        batch_size, in_size = inputs.shape
+        return (
+            self.weights.value.view(1, self.in_size, self.out_size)
+            * x.view(batch_size, self.in_size, 1)
+        ).sum(1).view(batch_size, self.out_size) + self.bias.value.view(self.out_size)
 
 
 def default_log_fn(epoch, total_loss, correct, losses):
