@@ -338,11 +338,13 @@ def _tensor_matrix_multiply(
         j = l % out_shape[2]
         i = (l // out_shape[2]) % out_shape[1]
         n = l // (out_shape[1] * out_shape[2])
+        acc = 0
+        out_pos = n*out_strides[0] + i*out_strides[1] + j*out_strides[2]
         for k in range(d_shared):
-            out_pos = n*out_strides[0] + i*out_strides[1] + j*out_strides[2]
             a_pos = n*a_batch_stride + i*a_strides[1] + k*a_strides[2]
             b_pos = n*b_batch_stride + k*b_strides[1] + j*b_strides[2]
-            out[out_pos] += a_storage[a_pos] * b_storage[b_pos]    
+            acc += a_storage[a_pos] * b_storage[b_pos]    
+        out[out_pos] = acc
 
 tensor_matrix_multiply = njit(_tensor_matrix_multiply, parallel=True)
 assert tensor_matrix_multiply is not None
