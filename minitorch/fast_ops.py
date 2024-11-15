@@ -332,8 +332,17 @@ def _tensor_matrix_multiply(
     b_batch_stride = b_strides[0] if b_shape[0] > 1 else 0
 
     # TODO: Implement for Task 3.2.
-    raise NotImplementedError("Need to implement for Task 3.2")
-
+    # only need to consider the 3D case
+    d_shared = a_shape[-1]    
+    for l in prange(len(out)):
+        j = l % out_shape[2]
+        i = (l // out_shape[2]) % out_shape[1]
+        n = l // (out_shape[1] * out_shape[2])
+        for k in range(d_shared):
+            out_pos = n*out_strides[0] + i*out_strides[1] + j*out_strides[2]
+            a_pos = n*a_batch_stride + i*a_strides[1] + k*a_strides[2]
+            b_pos = n*b_batch_stride + k*b_strides[1] + j*b_strides[2]
+            out[out_pos] += a_storage[a_pos] * b_storage[b_pos]    
 
 tensor_matrix_multiply = njit(_tensor_matrix_multiply, parallel=True)
 assert tensor_matrix_multiply is not None
