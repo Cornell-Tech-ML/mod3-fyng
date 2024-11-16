@@ -265,7 +265,7 @@ def _sum_practice(out: Storage, a: Storage, size: int) -> None:
     if i < size:
         cache[pos] = a[i]
         cuda.syncthreads()
-        interval = 1
+        interval = 2
         while interval < BLOCK_DIM:
             next = pos + interval - 1
             if pos % interval == 0 and next < BLOCK_DIM:
@@ -323,6 +323,11 @@ def tensor_reduce(
         pos = cuda.threadIdx.x
 
         # TODO: Implement for Task 3.3.
+        raise NotImplementedError("Need to implement for Task 3.3")
+        # if out_pos < out_size:
+        #     to_index(out_pos, out_shape, out_index)
+        #     o = index_to_position(out_index, out_strides)
+            
         
 
     return jit(_reduce)  # type: ignore
