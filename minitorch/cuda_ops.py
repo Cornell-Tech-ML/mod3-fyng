@@ -325,19 +325,18 @@ def tensor_reduce(
         # TODO: Implement for Task 3.3.
         reduce_dim_local = reduce_dim
         reduce_size = a_shape[reduce_dim_local]
-        assert reduce_size < BLOCK_DIM
         if out_pos < out_size:
             to_index(out_pos, out_shape, out_index)
             o = index_to_position(out_index, out_strides)
             out_index[reduce_dim_local] = 0
             a = index_to_position(out_index, a_strides)
-            if pos < BLOCK_DIM:
+            if pos < reduce_size:
                 cache[pos] = a_storage[a + pos * a_strides[reduce_dim_local]]
                 cuda.syncthreads()
                 span = 2
-                while span < reduce_size + 1:
+                while span < BLOCK_DIM + 1:
                     next = pos + span // 2
-                    if pos % span == 0 and next < reduce_size:
+                    if pos % span == 0 and next < BLOCK_DIM:
                         cache[pos] = fn(cache[pos], cache[next])
                     span *= 2
                     cuda.syncthreads()
