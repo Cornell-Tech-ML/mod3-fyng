@@ -267,13 +267,13 @@ def _sum_practice(out: Storage, a: Storage, size: int) -> None:
         cuda.syncthreads()
         span = 2
         while span < BLOCK_DIM + 1:
-            next = pos + span // 2
-            if pos % span == 0 and next < BLOCK_DIM:
+            if pos % span == 0:
+                next = pos + span // 2
                 cache[pos] += cache[next]
             span *= 2
             cuda.syncthreads()
-    if pos == 0:
-        out[cuda.blockIdx.x] = cache[0]
+        if pos == 0:
+            out[cuda.blockIdx.x] = cache[0]
 
 jit_sum_practice = cuda.jit()(_sum_practice)
 
