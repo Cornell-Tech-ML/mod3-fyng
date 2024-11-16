@@ -339,7 +339,7 @@ def tensor_reduce(
                     span *= 2
                     cuda.syncthreads()
             if pos == 0:
-                out[out_pos] = cache[0]
+                out[out_pos] = fn(cache[0], reduce_value)
 
     return jit(_reduce)  # type: ignore
 
