@@ -331,7 +331,7 @@ def tensor_reduce(
             o = index_to_position(out_index, out_strides)
             out_index[reduce_dim_local] = 0
             a = index_to_position(out_index, a_strides)
-            if pos < reduce_size:
+            if pos < BLOCK_DIM:
                 cache[pos] = a_storage[a + pos * a_strides[reduce_dim_local]]
                 cuda.syncthreads()
                 span = 2
