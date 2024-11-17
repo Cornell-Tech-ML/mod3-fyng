@@ -462,7 +462,7 @@ def _tensor_matrix_multiply(
     #    c) Compute the dot produce for position c[i, j]
     # TODO: Implement for Task 3.4.
     if i < out_shape[0] and j < out_shape[1]:
-        out_pos = i * out_strides[0] + j * out_strides[1]
+        out_pos = batch * out_strides[0] + i * out_strides[1] + j * out_strides[2]
         acc = 0.0
         for k in range(a_shape[-1]):
             a_shared[pi, pj] = a_storage[
@@ -475,15 +475,5 @@ def _tensor_matrix_multiply(
             acc += a_shared[pi, k] * b_shared[k, pj]
             cuda.syncthreads()
         out[out_pos] += acc
-
-    # if i < size and col < size:
-    #     idx = row * size + col
-    #     cache_a[row, col] = a[idx]
-    #     cache_b[row, col] = b[idx]
-    #     cuda.syncthreads()
-    #     acc = 0.0
-    #     for k in range(size):
-    #         acc += cache_a[row, k] * cache_b[k, col]
-    #     out[idx] = acc
 
 tensor_matrix_multiply = jit(_tensor_matrix_multiply)
