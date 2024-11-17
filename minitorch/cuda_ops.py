@@ -473,6 +473,7 @@ def _tensor_matrix_multiply(
             ]
             cuda.syncthreads()
             acc += a_shared[pi, k] * b_shared[k, pj]
+            cuda.syncthreads()
         out[out_pos] += acc
 
     # if i < size and col < size:
