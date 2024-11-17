@@ -338,7 +338,7 @@ def _tensor_matrix_multiply(
         j = l % out_shape[2]
         i = (l // out_shape[2]) % out_shape[1]
         n = l // (out_shape[1] * out_shape[2])
-        acc = 0
+        acc = 0.0
         out_pos = n*out_strides[0] + i*out_strides[1] + j*out_strides[2]
         for k in range(d_shared):
             a_pos = n*a_batch_stride + i*a_strides[1] + k*a_strides[2]
