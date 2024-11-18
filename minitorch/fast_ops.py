@@ -7,7 +7,6 @@ from numba import prange
 from numba import njit as _njit
 
 from .tensor_data import (
-    MAX_DIMS,
     broadcast_index,
     index_to_position,
     shape_broadcast,
@@ -19,7 +18,7 @@ if TYPE_CHECKING:
     from typing import Callable, Optional
 
     from .tensor import Tensor
-    from .tensor_data import Index, Shape, Storage, Strides
+    from .tensor_data import Shape, Storage, Strides
 
 # TIP: Use `NUMBA_DISABLE_JIT=1 pytest tests/ -m task3_1` to run these tests without JIT.
 
@@ -30,6 +29,18 @@ Fn = TypeVar("Fn")
 
 
 def njit(fn: Fn, **kwargs: Any) -> Fn:
+    """JIT compile a numba function.
+
+    Args:
+    ----
+        fn (Fn): The function to be JIT compiled.
+        **kwargs: Additional keyword arguments to pass to the JIT compiler.
+
+    Returns:
+    -------
+        Fn: The JIT compiled function.
+
+    """
     return _njit(inline="always", **kwargs)(fn)  # type: ignore
 
 
@@ -220,7 +231,12 @@ def tensor_zip(
         b_strides: Strides,
     ) -> None:
         # TODO: Implement for Task 3.1.
-        if np.array_equal(out_strides, a_strides) and np.array_equal(out_strides, b_strides) and np.array_equal(out_shape, a_shape) and np.array_equal(out_shape, b_shape):
+        if (
+            np.array_equal(out_strides, a_strides)
+            and np.array_equal(out_strides, b_strides)
+            and np.array_equal(out_shape, a_shape)
+            and np.array_equal(out_shape, b_shape)
+        ):
             for i in prange(len(out)):
                 out[i] = fn(a_storage[i], b_storage[i])
         else:
@@ -333,18 +349,19 @@ def _tensor_matrix_multiply(
 
     # TODO: Implement for Task 3.2.
     # only need to consider the 3D case
-    d_shared = a_shape[-1]    
+    d_shared = a_shape[-1]
     for l in prange(len(out)):
         j = l % out_shape[2]
         i = (l // out_shape[2]) % out_shape[1]
         n = l // (out_shape[1] * out_shape[2])
         acc = 0.0
-        out_pos = n*out_strides[0] + i*out_strides[1] + j*out_strides[2]
+        out_pos = n * out_strides[0] + i * out_strides[1] + j * out_strides[2]
         for k in range(d_shared):
-            a_pos = n*a_batch_stride + i*a_strides[1] + k*a_strides[2]
-            b_pos = n*b_batch_stride + k*b_strides[1] + j*b_strides[2]
-            acc += a_storage[a_pos] * b_storage[b_pos]    
+            a_pos = n * a_batch_stride + i * a_strides[1] + k * a_strides[2]
+            b_pos = n * b_batch_stride + k * b_strides[1] + j * b_strides[2]
+            acc += a_storage[a_pos] * b_storage[b_pos]
         out[out_pos] = acc
+
 
 tensor_matrix_multiply = njit(_tensor_matrix_multiply, parallel=True)
 assert tensor_matrix_multiply is not None

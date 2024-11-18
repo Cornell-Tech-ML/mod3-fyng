@@ -68,10 +68,11 @@ def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
     """
     # TODO: Implement for Task 2.1.
     cur_ord = ordinal + 0
-    for i in range(len(shape)-1, -1, -1):
+    for i in range(len(shape) - 1, -1, -1):
         sh = shape[i]
         out_index[i] = int(cur_ord % sh)
         cur_ord = cur_ord // sh
+
 
 def broadcast_index(
     big_index: Index, big_shape: Shape, shape: Shape, out_index: OutIndex
@@ -101,6 +102,7 @@ def broadcast_index(
         else:
             out_index[i] = 0
     return None
+
 
 def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
     """Broadcast two shapes to create a new union shape.
@@ -136,6 +138,7 @@ def shape_broadcast(shape1: UserShape, shape2: UserShape) -> UserShape:
             if shape2_rev[i] != c_rev[i] and shape2_rev[i] != 1:
                 raise IndexingError(f"Cannot broadcast {shape1} and {shape2}.")
     return tuple(reversed(c_rev))
+
 
 def strides_from_shape(shape: UserShape) -> UserStrides:
     """Return a contiguous stride for a shape"""
@@ -295,9 +298,9 @@ class TensorData:
         # TODO: Implement for Task 2.1.
 
         return TensorData(
-            self._storage, 
-            tuple(self.shape[o] for o in order), 
-            tuple(self._strides[o] for o in order)
+            self._storage,
+            tuple(self.shape[o] for o in order),
+            tuple(self._strides[o] for o in order),
         )
 
     def to_string(self) -> str:

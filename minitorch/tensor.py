@@ -333,7 +333,7 @@ class Tensor:
 
     def __rmul__(self, b: TensorLike) -> Tensor:
         return self * b
-    
+
     def all(self, dim: Optional[int] = None) -> Tensor:
         """Check if all elements are true."""
         if dim is None:
@@ -367,18 +367,18 @@ class Tensor:
             return Sum.apply(self.contiguous().view(self.size), self._ensure_tensor(0))
         else:
             return Sum.apply(self, self._ensure_tensor(dim))
-    
+
     def mean(self, dim: Optional[int] = None) -> Tensor:
         """Take the mean of the tensor, optionally over the given dimension."""
         if dim is None:
             return self.sum() / self.size
         else:
             return self.sum(dim) / self.shape[dim]
-        
+
     def permute(self, *order: int) -> Tensor:
         """Permute the dimensions of the tensor."""
         return Permute.apply(self, tensor(list(order)))
-    
+
     def view(self, *shape: int) -> Tensor:
         """Reshape the tensor into the given shape."""
         return View.apply(self, tensor(list(shape)))

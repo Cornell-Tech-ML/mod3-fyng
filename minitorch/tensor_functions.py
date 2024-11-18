@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import random
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 
@@ -132,8 +132,8 @@ class Mul(Function):
         """$f'_x(x, y) * d = y * d, f'_y(x, y) * d = x * d$"""
         t1, t2 = ctx.saved_values
         return (
-            grad_output.f.mul_zip(t2, grad_output), 
-            grad_output.f.mul_zip(t1, grad_output)
+            grad_output.f.mul_zip(t2, grad_output),
+            grad_output.f.mul_zip(t1, grad_output),
         )
 
 
@@ -211,14 +211,13 @@ class Sum(Function):
         r"""Compute $f(x) = \sum x$"""
         ctx.save_for_backward(a.shape, dim)
         return a.f.add_reduce(a, int(dim.item()))
-        
+
     @staticmethod
-    def backward(
-        ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
+    def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
         """$f'(x) * d = d$"""
         a_shape, dim = ctx.saved_values
         return grad_output, 0.0
-    
+
 
 class LT(Function):
     """Less than function $f(x, y) = x < y$"""
@@ -280,9 +279,14 @@ class Permute(Function):
         """Compute $f'(x) * d$"""
         (order,) = ctx.saved_values
         order2: List[int] = [
-            a[0] for a in sorted(enumerate([order[i] for i in range(order.size)]), key=lambda a: a[1])
-        ]   
+            a[0]
+            for a in sorted(
+                enumerate([order[i] for i in range(order.size)]), key=lambda a: a[1]
+            )
+        ]
         return grad_output._new(grad_output._tensor.permute(*order2)), 0.0
+
+
 # End of Task 2.3
 
 
