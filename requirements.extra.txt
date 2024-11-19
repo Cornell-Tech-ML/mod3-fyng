@@ -2,11 +2,11 @@ altair==4.2.2
 datasets==2.4.0
 embeddings==0.0.8
 networkx==3.3
-pandas
+pandas==2.2.3
 plotly==4.14.3
 pydot==1.4.1
 python-mnist
-seaborn
+seaborn==0.13.2
 streamlit==1.12.0
 streamlit-ace
 torch
