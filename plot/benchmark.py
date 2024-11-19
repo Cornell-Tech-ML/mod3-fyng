@@ -44,4 +44,4 @@ if __name__ == "__main__":
     g = sns.lineplot(data=df, x="size", y="time (s)", hue="backend", palette="viridis")
     g.set(yscale="log")
     fig = g.get_figure()
-    fig.savefig("plot/benchmark.png")
+    fig.savefig("benchmark.png")
