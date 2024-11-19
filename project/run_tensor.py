@@ -40,7 +40,7 @@ class Linear(minitorch.Module):
         batch_size, in_size = inputs.shape
         return (
             self.weights.value.view(1, self.in_size, self.out_size)
-            * x.view(batch_size, self.in_size, 1)
+            * inputs.view(batch_size, self.in_size, 1)
         ).sum(1).view(batch_size, self.out_size) + self.bias.value.view(self.out_size)
 
 
